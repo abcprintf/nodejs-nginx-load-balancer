@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    deploy:
+      mode: replicated
+      replicas: 3
+      # resources:
+      #   limits:
+      #     cpus: '0.25'
+      #     memory: 512M
+      restart_policy:
+        condition: on-failure
+        delay: 3s
+        max_attempts: 3
+        window: 30s
+      update_config:
+        delay: 10s
+        failure_action: rollback
+        max_failure_ratio: .5
+        monitor: 5s
+        parallelism: 1
+    ports:
+      - "5001-5003:6000"
+      # - "6000"
+    volumes:
+      - ./:/app
+    networks:
+      - app-network
+
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    container_name: nginx
+    restart: always
+    ports:
+      - 5000:80
+    volumes:
+      - ./:/app
+    networks:
+      - app-network
+    depends_on:
+      - app
+
+networks:
+  app-network:
+    driver: bridge
